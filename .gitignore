@@ -1,0 +1,17 @@
+# Archivos grandes y modelos
+*.zip
+*.h5
+*.onnx
+# Entornos y dependencias
+venv/
+.env
+__pycache__/
+*.pyc
+# Datos y logs
+*.log
+data/
+dataset/
+# IDEs y SO
+.vscode/
+.DS_Store
+Thumbs.db
