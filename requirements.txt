@@ -1,0 +1,6 @@
+Django==5.1.2
+tensorflow==2.20.0
+opencv-python==4.8.1.78
+onnxruntime==1.23.0
+Pillow==10.4.0
+numpy==2.3.3
