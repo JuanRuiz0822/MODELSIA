@@ -1,42 +1,66 @@
 #!/usr/bin/env bash
-# copy_models.sh
+# setup_django_integration.sh
 # Ejecutar desde C:/Users/Sennova/Desktop/MODELSIA_WEB
-# Este script buscará y copiará los archivos .h5 y .onnx específicos desde el repo MODELSIA al directorio models/
 
-# 1. Definir rutas raíz y destino
-REPO_DIR="MODELSIA"
-DEST_DIR="models"
-
-# 2. Crear carpeta destino si no existe
-mkdir -p "$DEST_DIR"
-
-echo "Buscando y copiando archivos .h5..."
-# 3. Buscar y copiar el archivo .h5
-H5_PATH=$(find "$REPO_DIR/CNN-7Model64 h5" -type f -name "*.h5" 2>/dev/null | head -n 1)
-if [ -n "$H5_PATH" ]; then
-    cp "$H5_PATH" "$DEST_DIR/"
-    echo "Copiado $H5_PATH a $DEST_DIR/"
+# 1. Agregar ia_detector a INSTALLED_APPS en settings.py
+SETTINGS_FILE="modelsia_project/settings.py"
+if grep -q "ia_detector" "$SETTINGS_FILE"; then
+    echo "ia_detector ya está en INSTALLED_APPS"
 else
-    echo "ERROR: No se encontró ningún .h5 en $REPO_DIR/CNN-7Model64 h5" >&2
+    sed -i.bak "/INSTALLED_APPS = \[/a\    'ia_detector'," "$SETTINGS_FILE"
+    echo "Añadido 'ia_detector' a INSTALLED_APPS"
 fi
 
-echo "Buscando y copiando archivos .onnx..."
-# 4. Buscar y copiar el archivo .onnx
-ONNX_PATH=$(find "$REPO_DIR/best(1) onnx" -type f -name "*.onnx" 2>/dev/null | head -n 1)
-if [ -n "$ONNX_PATH" ]; then
-    cp "$ONNX_PATH" "$DEST_DIR/"
-    echo "Copiado $ONNX_PATH a $DEST_DIR/"
+# 2. Configurar MEDIA y STATIC en settings.py
+if grep -q "MEDIA_URL" "$SETTINGS_FILE"; then
+    echo "MEDIA y STATIC ya configurados en settings.py"
 else
-    echo "ERROR: No se encontró ningún .onnx en $REPO_DIR/best(1) onnx" >&2
+    cat << EOF >> "$SETTINGS_FILE"
+
+# Media files
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+# Static files
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [ BASE_DIR / 'static' ]
+EOF
+    echo "Configurado MEDIA_URL, MEDIA_ROOT, STATIC_URL, STATICFILES_DIRS"
 fi
 
-echo "Copiando Descripción Enfermedades..."
-# 5. Copiar Descripción Enfermedades.txt
-if [ -f "$REPO_DIR/Descripción Enfermedades.txt" ]; then
-    cp "$REPO_DIR/Descripción Enfermedades.txt" .
-    echo "Copiado Descripción Enfermedades.txt a la ruta actual"
+# 3. Crear ia_detector/urls.py si no existe
+iadet_urls="ia_detector/urls.py"
+if [ ! -f "$iadet_urls" ]; then
+    cat << EOF > "$iadet_urls"
+from django.urls import path
+from .views import index, procesar_imagen
+
+urlpatterns = [
+    path('', index, name='index'),
+    path('procesar/', procesar_imagen, name='procesar_imagen'),
+]
+EOF
+    echo "Creado ia_detector/urls.py"
 else
-    echo "ERROR: No se encontró Descripción Enfermedades.txt en $REPO_DIR" >&2
+    echo "ia_detector/urls.py ya existe"
 fi
 
-echo "Proceso completado. Verifica el contenido de $DEST_DIR y la descripción."
+# 4. Incluir app URLs en project urls.py
+PROJ_URLS="modelsia_project/urls.py"
+if grep -q "include('ia_detector.urls')" "$PROJ_URLS"; then
+    echo "ia_detector.urls ya incluido en project urls.py"
+else
+    sed -i.bak "/urlpatterns = \[/a\    path('', include('ia_detector.urls'))," "$PROJ_URLS"
+    echo "Incluido ruta de ia_detector en project urls.py"
+fi
+
+# 5. Añadir import include y settings static in project urls.py
+if grep -q "from django.conf.urls.static" "$PROJ_URLS"; then
+    echo "Static URLs ya configuradas"
+else
+    sed -i.bak "1s|^|from django.conf import settings\nfrom django.conf.urls.static import static\nfrom django.urls import include, path\n|" "$PROJ_URLS"
+    sed -i "/urlpatterns = \[/a\]\nif settings.DEBUG:\n    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)\n" "$PROJ_URLS"
+    echo "Agregados imports y static() en project urls.py"
+fi
+
+echo "Integración Django completada. Ejecuta migraciones y runserver."
