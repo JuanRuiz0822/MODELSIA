@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MODELSIA</title>
+</head>
+<body>
+  <h1>MODELSIA</h1>
+  <form action="/segmenta/" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="file" name="imagen" required>
+    <button type="submit">Segmentar</button>
+  </form>
+  <form action="/detecta/" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="file" name="imagen" required>
+    <button type="submit">Detectar Enfermedad</button>
+  </form>
+</body>
+</html>
