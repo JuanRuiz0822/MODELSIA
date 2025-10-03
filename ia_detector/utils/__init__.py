@@ -6,7 +6,6 @@ import numpy as np
 from IPython.display import display, Image as IPImage
 import os
 
-!pip install ultralytics
 import cv2
 from PIL import Image
 from IPython.display import display
