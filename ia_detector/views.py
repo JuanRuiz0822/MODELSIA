@@ -1,41 +1,67 @@
-from django.shortcuts import render, redirect
-from .models import ImagenAnalizada
-from .utils import segmentar_imagen, detectar_enfermedad
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
 from django.conf import settings
-import cv2, os
+from .models import ImagenAnalizada
+# Importación temporal deshabilitada hasta instalar dependencias de IA
+# from .utils import procesar_imagen_completa
+import os
+import logging
+
+logger = logging.getLogger(__name__)
+
+def procesar_imagen_completa(imagen_path):
+    """Función temporal que simula el procesamiento hasta instalar las dependencias de IA"""
+    return None, [], "Funcionalidad no disponible", 0.0, "Instale las dependencias de IA para usar esta función"
 
 def index(request):
-    return render(request, 'index.html')
+    """Vista principal del sistema"""
+    return render(request, 'ia_detector/index.html')
 
-def procesar_segmentacion(request):
-    if request.method=='POST' and request.FILES.get('imagen'):
-        obj = ImagenAnalizada(imagen=request.FILES['imagen'])
-        obj.save()
-        path = obj.imagen.path
-        resultados = segmentar_imagen(path)
-        img = cv2.imread(path)
-        for r in resultados:
-            cv2.rectangle(img,(r['x'],r['y']),(r['x']+r['w'],r['y']+r['h']),(0,255,0),2)
-        out = os.path.join(settings.MEDIA_ROOT,'processed',f"seg_{os.path.basename(path)}")
-        cv2.imwrite(out,img)
-        obj.imagen_seg.name = os.path.relpath(out, settings.MEDIA_ROOT)
-        obj.madurez = resultados[0]['label']
-        obj.conf_mad = resultados[0]['conf']
-        obj.save()
-    return redirect('index')
+def analizar_imagen(request):
+    """Procesa una imagen subida por el usuario"""
+    if request.method == 'POST' and request.FILES.get('imagen'):
+        try:
+            # Crear objeto de imagen analizada
+            imagen_obj = ImagenAnalizada(imagen=request.FILES['imagen'])
+            imagen_obj.save()
+            
+            # Obtener ruta de la imagen
+            imagen_path = imagen_obj.imagen.path
+            
+            # Procesar imagen completa (versión temporal)
+            img_procesada, detecciones, enfermedad, conf_enf, descripcion = procesar_imagen_completa(imagen_path)
+            
+            # Actualizar objeto con resultados temporales
+            imagen_obj.enfermedad = enfermedad
+            imagen_obj.conf_enf = conf_enf
+            imagen_obj.descripcion = descripcion
+            imagen_obj.save()
+            
+            messages.warning(request, 'Imagen guardada. Instale las dependencias de IA para procesamiento completo.')
+            return redirect('ia_detector:mostrar_resultado', imagen_id=imagen_obj.id)
+                
+        except Exception as e:
+            logger.error(f"Error en analizar_imagen: {e}")
+            messages.error(request, f'Error al procesar la imagen: {str(e)}')
+    
+    return redirect('ia_detector:index')
 
-def procesar_enfermedad(request):
-    if request.method=='POST' and request.FILES.get('imagen'):
-        obj = ImagenAnalizada(imagen=request.FILES['imagen'])
-        obj.save()
-        path = obj.imagen.path
-        enf, conf = detectar_enfermedad(path)
-        img = cv2.imread(path)
-        cv2.putText(img, enf, (10,30), cv2.FONT_HERSHEY_SIMPLEX,1,(0,0,255),2)
-        out = os.path.join(settings.MEDIA_ROOT,'processed',f"enf_{os.path.basename(path)}")
-        cv2.imwrite(out,img)
-        obj.imagen_enf.name = os.path.relpath(out, settings.MEDIA_ROOT)
-        obj.enfermedad = enf
-        obj.conf_enf = conf
-        obj.save()
-    return redirect('index')
+def mostrar_resultado(request, imagen_id):
+    """Muestra los resultados del análisis de una imagen"""
+    imagen = get_object_or_404(ImagenAnalizada, id=imagen_id)
+    
+    context = {
+        'imagen': imagen,
+    }
+    
+    return render(request, 'ia_detector/resultado.html', context)
+
+def historial(request):
+    """Muestra el historial de imágenes analizadas"""
+    imagenes = ImagenAnalizada.objects.all().order_by('-fecha')
+    
+    context = {
+        'imagenes': imagenes,
+    }
+    
+    return render(request, 'ia_detector/historial.html', context)

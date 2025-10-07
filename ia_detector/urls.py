@@ -1,8 +1,11 @@
 from django.urls import path
-from .views import index, procesar_segmentacion, procesar_enfermedad
+from . import views
+
+app_name = 'ia_detector'
 
 urlpatterns = [
-    path('', index, name='index'),
-    path('segmenta/', procesar_segmentacion, name='segmenta'),
-    path('detecta/', procesar_enfermedad, name='detecta'),
+    path('', views.index, name='index'),
+    path('analizar/', views.analizar_imagen, name='analizar_imagen'),
+    path('resultado/<int:imagen_id>/', views.mostrar_resultado, name='mostrar_resultado'),
+    path('historial/', views.historial, name='historial'),
 ]

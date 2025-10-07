@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block title %}MODELSIA - Análisis de Tomates{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-5">
+            <h1 class="display-4 text-success">
+                <i class="fas fa-seedling"></i> MODELSIA
+            </h1>
+            <p class="lead">Sistema Inteligente de Análisis de Tomates</p>
+            <p class="text-muted">
+                Sube una imagen de tomate para detectar enfermedades y analizar el estado de madurez
+            </p>
+        </div>
+
+        <!-- Upload Form -->
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-upload"></i> Subir Imagen para Análisis
+                </h5>
+            </div>
+            <div class="card-body">
+                <form action="{% url 'ia_detector:analizar_imagen' %}" method="post" enctype="multipart/form-data" id="uploadForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="imagen" class="form-label">Seleccionar imagen de tomate:</label>
+                        <input type="file" class="form-control" id="imagen" name="imagen" accept="image/*" required>
+                        <div class="form-text">
+                            Formatos soportados: JPG, PNG, JPEG. Tamaño máximo: 10MB
+                        </div>
+                    </div>
+                    
+                    <!-- Preview -->
+                    <div id="imagePreview" class="mb-3" style="display: none;">
+                        <label class="form-label">Vista previa:</label>
+                        <div class="text-center">
+                            <img id="preview" src="" alt="Vista previa" class="img-fluid rounded" style="max-height: 300px;">
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success btn-lg" id="submitBtn">
+                            <i class="fas fa-brain"></i> Analizar Imagen
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Features -->
+        <div class="row mt-5">
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-search-plus fa-3x text-primary mb-3"></i>
+                        <h5>Segmentación Inteligente</h5>
+                        <p class="text-muted">
+                            Detecta y segmenta tomates en la imagen, clasificándolos por estado de madurez (verde o maduro)
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-stethoscope fa-3x text-danger mb-3"></i>
+                        <h5>Detección de Enfermedades</h5>
+                        <p class="text-muted">
+                            Identifica enfermedades comunes en tomates con descripciones detalladas y nivel de confianza
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Supported Diseases -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-list"></i> Enfermedades Detectables
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success"></i> Mancha bacteriana</li>
+                            <li><i class="fas fa-check text-success"></i> Tizón temprano</li>
+                            <li><i class="fas fa-check text-success"></i> Tizón tardío</li>
+                            <li><i class="fas fa-check text-success"></i> Mancha foliar por Septoria</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success"></i> Virus del rizado amarillo</li>
+                            <li><i class="fas fa-check text-success"></i> Virus del mosaico</li>
+                            <li><i class="fas fa-check text-success"></i> Planta sana</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('imagen').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('preview').src = e.target.result;
+            document.getElementById('imagePreview').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+document.getElementById('uploadForm').addEventListener('submit', function() {
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+    submitBtn.disabled = true;
+});
+</script>
+{% endblock %}
